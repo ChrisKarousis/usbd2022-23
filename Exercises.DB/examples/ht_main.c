@@ -5,7 +5,7 @@
 #include "bf.h"
 #include "ht_table.h"
 
-#define RECORDS_NUM 100 // you can change it if you want
+#define RECORDS_NUM 1000 // you can change it if you want
 #define FILE_NAME "data.db"
 
 #define CALL_OR_DIE(call)     \
@@ -20,7 +20,7 @@
 int main() {
   BF_Init(LRU);
 
-  HT_CreateFile(FILE_NAME,5);
+  HT_CreateFile(FILE_NAME,15);
   HT_info* info = HT_OpenFile(FILE_NAME);
   printf("Info size:%d\n", info->size);
   Record record;
@@ -30,11 +30,7 @@ int main() {
   for (int id = 0; id < RECORDS_NUM; ++id) {
     record = randomRecord();
     HT_InsertEntry(info, record);
-    if(record.id == 33){
-      printRecord(record);
-    }else if(record.id == 47){
-      printRecord(record);
-    }
+    printRecord(record);
   }
 
   printf("RUN PrintAllEntries\n");

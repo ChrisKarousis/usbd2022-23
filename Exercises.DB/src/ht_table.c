@@ -136,6 +136,8 @@ int HT_InsertEntry(HT_info* ht_info, Record record){
       memcpy(data + sizeof(data) - sizeof(HT_block_info), metadata, sizeof(HT_block_info));
       BF_Block_SetDirty(newBlock);
       CALL_OR_DIE(BF_UnpinBlock(newBlock));
+      BF_Block_SetDirty(block);
+      CALL_OR_DIE(BF_UnpinBlock(block));
     }
   }
   return 0;
@@ -162,6 +164,7 @@ int HT_GetAllEntries(HT_info* ht_info, void *value ){
     memcpy(metadata, data + sizeof(data) - sizeof(HT_block_info), sizeof(HT_block_info));
     int recCount = metadata->recordCount;
     printf("Recordcount : %d\n", recCount);
+    CALL_OR_DIE(BF_UnpinBlock(block));
     for(i=0; i<recCount; i++){
       //memcpy(rec, data + i*sizeof(Record), sizeof(Record));
       rec = ((Record *)data);

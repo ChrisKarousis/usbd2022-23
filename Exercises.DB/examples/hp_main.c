@@ -18,13 +18,13 @@
   }
 
 int main() {
+  BF_Block_Init(&block);
   BF_Init(LRU);
-
   HP_CreateFile(FILE_NAME);
   HP_info* info = HP_OpenFile(FILE_NAME);
 
   Record record;
-  srand(12569874);
+  srand(time(NULL));
   int r;
   printf("Insert Entries\n");
   for (int id = 0; id < RECORDS_NUM; ++id) {
@@ -34,7 +34,7 @@ int main() {
 
   printf("RUN PrintAllEntries\n");
   int id = rand() % RECORDS_NUM;
-  printf("\nSearching for: %d",id);
+  printf("\nSearching for: %d\n",id);
   HP_GetAllEntries(info, id);
 
   HP_CloseFile(info);

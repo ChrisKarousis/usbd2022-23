@@ -2,12 +2,25 @@
 #define HP_FILE_H
 #include <record.h>
 
-
+#define HP_ERROR -1
+#define HP_MAX_RECORDS (BF_BLOCK_SIZE - sizeof(HP_block_info))/sizeof(Record) 
 
 /* Η δομή HP_info κρατάει μεταδεδομένα που σχετίζονται με το αρχείο σωρού*/
 typedef struct {
-    // Να το συμπληρώσετε
+    char file_type[3]; //Ο τύπος αρχείου: HP για σωρό ή HT για κατακερματισμό
+    int fd; // αναγνωριστικός αριθμός ανοίγματος αρχείου από το επίπεδο block
+    int last_block; // Το id του τελευταίου block στο αρχείο
 } HP_info;
+
+typedef struct {
+    int num_records; // Ο αριθμος εγγραφων που εχει το block σε καθε δεδομενη στιγμη (απο 1 ως HP_MAX_RECORDS)
+} HP_block_info;
+
+BF_Block* block;
+// Κανει allocate καινουριο block στο αρχειο και γραφει εκει την εγγραφη
+int HP_insert_on_new_block (HP_info* hp_info, Record record);
+
+
 
 /*Η συνάρτηση HP_CreateFile χρησιμοποιείται για τη δημιουργία και
 κατάλληλη αρχικοποίηση ενός άδειου αρχείου σωρού με όνομα fileName.

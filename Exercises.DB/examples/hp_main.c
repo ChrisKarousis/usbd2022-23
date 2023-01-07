@@ -18,7 +18,6 @@
   }
 
 int main() {
-  BF_Block_Init(&block);
   BF_Init(LRU);
   HP_CreateFile(FILE_NAME);
   HP_info* info = HP_OpenFile(FILE_NAME);
@@ -35,8 +34,11 @@ int main() {
   printf("RUN PrintAllEntries\n");
   int id = rand() % RECORDS_NUM;
   printf("\nSearching for: %d\n",id);
-  HP_GetAllEntries(info, id);
+  int blocks_searched =  HP_GetAllEntries(info, id);
+  printf("%d blocks needed to find all the records with id : %d\n", blocks_searched, id);
 
   HP_CloseFile(info);
   BF_Close();
+
+  return 0;
 }

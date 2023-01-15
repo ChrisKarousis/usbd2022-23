@@ -91,7 +91,7 @@ int HT_CloseFile( HT_info* HT_info ){
 int HT_InsertEntry(HT_info* ht_info, Record record){
   int fd = ht_info->fileDesc;
   void* data;
-  int blockNum;
+  int blockNum, blockId;
   int h = hashFunction(record.id, ht_info->numBuckets);
   if(ht_info->hashTable[h] == -1){ // an den exw akoma block gia tis eggrafes
     BF_Block* block;
@@ -101,10 +101,11 @@ int HT_InsertEntry(HT_info* ht_info, Record record){
     memcpy(data, &record, sizeof(Record));
     CALL_OR_DIE(BF_GetBlockCounter(fd, &blockNum));
     ht_info->hashTable[h] = blockNum-1;
+    blockId = blockNum -1;
     HT_block_info blockInfo;
     blockInfo.recordCount = 1; // molis balame mia eggrafh
     blockInfo.nextBlock = -1; // exoume mono ena block
-    memcpy(data + sizeof(data) - sizeof(HT_block_info), &blockInfo, sizeof(HT_block_info)); // storing metadata
+    memcpy(data + BF_BLOCK_SIZE - sizeof(HT_block_info), &blockInfo, sizeof(HT_block_info)); // storing metadata
     BF_Block_SetDirty(block);
     CALL_OR_DIE(BF_UnpinBlock(block));
   }else {
@@ -113,16 +114,17 @@ int HT_InsertEntry(HT_info* ht_info, Record record){
     BF_Block_Init(&block);
     CALL_OR_DIE(BF_GetBlock(fd, ht_info->hashTable[h], block));
     data = BF_Block_GetData(block);
-    memcpy(metadata, data + sizeof(data) - sizeof(HT_block_info), sizeof(HT_block_info));
+    memcpy(metadata, data + BF_BLOCK_SIZE - sizeof(HT_block_info), sizeof(HT_block_info));
     if(metadata->recordCount != ht_info->size){
+      blockId = ht_info->hashTable[h];
       int recCount = metadata->recordCount;
       memcpy(data + recCount*sizeof(Record), &record, sizeof(Record));
       (metadata->recordCount)++;
-      memcpy(data + sizeof(data) - sizeof(HT_block_info), metadata, sizeof(HT_block_info));
+      memcpy(data + BF_BLOCK_SIZE - sizeof(HT_block_info), metadata, sizeof(HT_block_info));
       BF_Block_SetDirty(block);
       CALL_OR_DIE(BF_UnpinBlock(block));
       // memcpy metadata
-    }else {
+    }else { // to block einai full 
       int previousBlock = ht_info->hashTable[h];
       BF_Block* newBlock;
       BF_Block_Init(&newBlock);
@@ -131,16 +133,17 @@ int HT_InsertEntry(HT_info* ht_info, Record record){
       memcpy(data, &record, sizeof(Record));
       CALL_OR_DIE(BF_GetBlockCounter(fd, &blockNum));
       ht_info->hashTable[h] = blockNum-1;
+      blockId = blockNum-1;
       metadata->nextBlock = previousBlock;
       metadata->recordCount = 1;
-      memcpy(data + sizeof(data) - sizeof(HT_block_info), metadata, sizeof(HT_block_info));
+      memcpy(data + BF_BLOCK_SIZE - sizeof(HT_block_info), metadata, sizeof(HT_block_info));
       BF_Block_SetDirty(newBlock);
       CALL_OR_DIE(BF_UnpinBlock(newBlock));
       BF_Block_SetDirty(block);
       CALL_OR_DIE(BF_UnpinBlock(block));
     }
   }
-  return 0;
+  return blockId;
 }
 
 int HT_GetAllEntries(HT_info* ht_info, void *value ){
@@ -151,9 +154,7 @@ int HT_GetAllEntries(HT_info* ht_info, void *value ){
   Record* rec;
   int fd = ht_info->fileDesc;
   int h = hashFunction(id, ht_info->numBuckets);
-  printf("Hash function got me : %d\n", h);
   int blockNumber = ht_info->hashTable[h];
-  printf("Blocknumber to check : %d\n", blockNumber);
   while(blockNumber != -1){
     blockCount++;
     BF_Block* block;
@@ -161,9 +162,8 @@ int HT_GetAllEntries(HT_info* ht_info, void *value ){
     BF_Block_Init(&block);
     CALL_OR_DIE(BF_GetBlock(fd, blockNumber, block));
     void* data = BF_Block_GetData(block);
-    memcpy(metadata, data + sizeof(data) - sizeof(HT_block_info), sizeof(HT_block_info));
+    memcpy(metadata, data + BF_BLOCK_SIZE - sizeof(HT_block_info), sizeof(HT_block_info));
     int recCount = metadata->recordCount;
-    printf("Recordcount : %d\n", recCount);
     CALL_OR_DIE(BF_UnpinBlock(block));
     for(i=0; i<recCount; i++){
       //memcpy(rec, data + i*sizeof(Record), sizeof(Record));

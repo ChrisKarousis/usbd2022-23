@@ -6,7 +6,7 @@
 #include "ht_table.h"
 
 #define RECORDS_NUM 1000 // you can change it if you want
-#define FILE_NAME "data.db"
+#define FILE_NAME "HT_data.db"
 
 #define CALL_OR_DIE(call)     \
   {                           \
@@ -45,5 +45,7 @@ int main() {
   blockCount = HT_GetAllEntries(info, &id);
   printf("Perasa apo %d block gia na brw to id\n", blockCount);
   HT_CloseFile(info);
+  printf("RUN HashStatistics\n");
+  HashStatistics(FILE_NAME);
   BF_Close();
 }

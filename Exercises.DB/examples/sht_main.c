@@ -7,7 +7,7 @@
 #include "sht_table.h"
 
 #define RECORDS_NUM 10 // you can change it if you want
-#define FILE_NAME "data.db"
+#define FILE_NAME "SHT_data.db"
 #define INDEX_NAME "index.db"
 
 #define CALL_OR_DIE(call)     \

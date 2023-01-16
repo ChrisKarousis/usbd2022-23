@@ -170,7 +170,6 @@ int SHT_SecondaryGetAllEntries(HT_info* ht_info, SHT_info* sht_info, char* name)
       visited[i][j] = 0;
     }
   }
-  //int blockCount = 0; // posa blocks diabasthkan 
   
   SHT_record* rec;
   int shtfd = sht_info->fileDesc;
@@ -187,7 +186,6 @@ int SHT_SecondaryGetAllEntries(HT_info* ht_info, SHT_info* sht_info, char* name)
     int recCount = shtmetadata->recordCount;
     CALL_OR_DIE(BF_UnpinBlock(block));
     for(i=0; i<recCount; i++){
-      //memcpy(rec, data + i*sizeof(Record), sizeof(Record));
       rec = ((SHT_record *)data);
       if(strcmp(rec[i].name, name) == 0){
         int fd = ht_info->fileDesc;
@@ -205,7 +203,6 @@ int SHT_SecondaryGetAllEntries(HT_info* ht_info, SHT_info* sht_info, char* name)
           CALL_OR_DIE(BF_UnpinBlock(htblock));
           int j;
           for(j=0; j<recCount; j++){
-            //memcpy(rec, data + i*sizeof(Record), sizeof(Record));
             record = ((Record *)data);
             if((strcmp(record[j].name, name) == 0) && (visited[blockNumber][j] == 0)){
               printRecord(record[j]);
@@ -220,6 +217,3 @@ int SHT_SecondaryGetAllEntries(HT_info* ht_info, SHT_info* sht_info, char* name)
   }
   return count;
 }
-
-
-

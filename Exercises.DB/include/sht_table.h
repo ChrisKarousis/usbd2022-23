@@ -75,4 +75,6 @@ int SHT_SecondaryGetAllEntries(
 
 SHT_record setValues(char* name, int block_id);
 
+int HashStatistics(char* filename /* όνομα του αρχείου που ενδιαφέρει */ );
+
 #endif // SHT_FILE_H

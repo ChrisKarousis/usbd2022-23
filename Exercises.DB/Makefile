@@ -16,4 +16,3 @@ sht:
 
 clean:
 	rm -f *.db
-

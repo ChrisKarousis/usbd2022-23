@@ -140,7 +140,7 @@ int HT_InsertEntry(HT_info* ht_info, Record record){
       CALL_OR_DIE(BF_GetBlockCounter(fd, &blockNum));
       ht_info->hashTable[h] = blockNum-1; // ενημερωση του πινακα να δειχνει στο καινουριο μπλοκ
       blockId = blockNum-1;
-      metadata->nextBlock = previousBlock; // συνδεση του καινουριου μπλοκ με το προηγουμενο
+      metadata->nextBlock = previousBlock; // συνδεση του καινουριου μπλοκ με το παλιο (το παλιο γινεται μπλοκ υπερχειλισης)
       metadata->recordCount = 1;
       memcpy(data + BF_BLOCK_SIZE - sizeof(HT_block_info), metadata, sizeof(HT_block_info));
       BF_Block_SetDirty(newBlock);

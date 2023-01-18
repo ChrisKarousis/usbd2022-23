@@ -18,6 +18,7 @@
 
 extern int openFiles;
 
+
 int shtHashFunction(char* str, long int numBuckets){
   return (str[0]-'A')%numBuckets; // we take the first letter and then modulo to put the words in buckets
 }
@@ -292,6 +293,8 @@ int SHT_HashStatistics(char* fileName){
     if (chainLengths[i] > 1) {chainCount++;}
   }
   printf("Number of buckets with overflow chains: %d\n", chainCount);
+
+  SHT_CloseSecondaryIndex(sht_info);
   free(chainLengths);
   return 0;
 }

@@ -4,6 +4,7 @@
 #include <ht_table.h>
 
 typedef struct {
+    char record[15];
     char name[15];
     int blockId;
 } SHT_record;

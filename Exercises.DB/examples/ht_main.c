@@ -46,6 +46,6 @@ int main() {
   printf("Perasa apo %d block gia na brw to id\n", blockCount);
   HT_CloseFile(info);
   printf("RUN HashStatistics\n");
-  HashStatistics(FILE_NAME);
+  HT_HashStatistics(FILE_NAME);
   BF_Close();
 }

@@ -18,6 +18,7 @@
   }
 
 int main() {
+  srand(time(NULL));
   BF_Init(LRU);
   HP_CreateFile(FILE_NAME);
   HP_info* info = HP_OpenFile(FILE_NAME);

@@ -38,6 +38,7 @@ int SHT_CreateSecondaryIndex(char *sfileName,  int buckets, char* fileName){
   CALL_OR_DIE(BF_AllocateBlock(fd1, infoBlock));
   data = BF_Block_GetData(infoBlock);
   SHT_info hashInfo;
+  strcpy(hashInfo.file_type, "SHT");
   hashInfo.primary = fd2;
   hashInfo.fileDesc = fd1;
   hashInfo.numBuckets = buckets;
@@ -69,8 +70,13 @@ SHT_info* SHT_OpenSecondaryIndex(char *indexName){
   CALL_OR_DIE(BF_GetBlock(fd, 0, block));
   
   data = BF_Block_GetData(block);
-  
   hashInfo = data;
+  // Ελεγχος οτι το αρχειο ειναι secondary hash file
+  if (strcmp(hashInfo->file_type, "SHT")!=0){
+    perror("Error opening: File is not a Secondary Hash File");
+    return NULL;
+  }
+  hashInfo->fileDesc = fd;
   return hashInfo;
 }
 
@@ -97,7 +103,6 @@ int SHT_SecondaryInsertEntry(SHT_info* sht_info, Record record, int block_id){
   void* data;
   int blockNum;
   SHT_record shtRecord;
-  memcpy(shtRecord.record, "SHT_record", strlen("SHT_record")+1);
   memcpy(shtRecord.name, record.name, strlen(record.name) + 1);
   shtRecord.blockId = block_id;
   int h = shtHashFunction(record.name, sht_info->numBuckets);
@@ -151,6 +156,7 @@ int SHT_SecondaryInsertEntry(SHT_info* sht_info, Record record, int block_id){
       BF_Block_SetDirty(block);
       CALL_OR_DIE(BF_UnpinBlock(block));
     }
+  free(metadata);
   }
   
   return 0;
@@ -211,10 +217,81 @@ int SHT_SecondaryGetAllEntries(HT_info* ht_info, SHT_info* sht_info, char* name)
             }
           }
           blockNumber = metadata->nextBlock;
+          free(metadata);
         }
       }
     }
-    blockNumber = shtmetadata->nextBlock; 
+    blockNumber = shtmetadata->nextBlock;
+    free(shtmetadata);
   }
+  for(i = 0 ; i < blockNum ; i++)
+    free(visited[i]);
+  free (visited);
   return count;
+}
+
+
+int SHT_HashStatistics(char* fileName){
+  SHT_info* sht_info =  SHT_OpenSecondaryIndex(fileName);
+  int fd = sht_info->fileDesc;
+  int numBlocks;
+  CALL_OR_DIE(BF_GetBlockCounter(fd, &numBlocks));
+  int numBuckets = sht_info->numBuckets;
+  int* hashTable = sht_info->shashTable;
+  int minRecords = numBlocks*sht_info->size; // Ελαχιστο: Αρχικοποιηση ως ενα upper bound
+  int maxRecords = 0; // Μεγιστο: Αρχικοποιηση ως 0
+  int sumRecords = 0; // Ο συνολικος αριθμος εγγραφων για ολο το αρχειο
+  int* chainLengths = malloc(numBuckets*sizeof(int)); // Ο αριθμος των blocks για καθε bucket (αλυσιδες υπερχειλισης)
+
+  for(int i = 0; i < numBuckets; i++){ // Για καθε bucket
+    // Αν ειναι αδειος, προχωρα στον επομενο καδο
+    if (hashTable[i] == -1){
+      minRecords = 0;
+      chainLengths[i] = 0;
+      continue;
+    }
+    chainLengths[i] = 1; // Αρχικοποιηση σε 1 αν ο καδος εχει τουλαχιστον 1 μπλοκ
+    BF_Block* block;
+    BF_Block_Init(&block);
+    CALL_OR_DIE(BF_GetBlock(fd, hashTable[i], block));
+    void* data = BF_Block_GetData(block);
+    HT_block_info* metadata = malloc(sizeof(SHT_block_info));
+    memcpy(metadata, data + BF_BLOCK_SIZE - sizeof(SHT_block_info), sizeof(SHT_block_info));
+    int recordCount = metadata->recordCount; // Ο αριθμος εγγραφων του συγκεκριμενου bucket
+    int nextBlock = metadata->nextBlock;
+    free(metadata);
+    while(nextBlock != -1){ // Αν ο καδος περιεχει μπλοκ υπερχειλισης
+      chainLengths[i]++;
+      BF_Block* next;
+      BF_Block_Init(&next);
+      CALL_OR_DIE(BF_GetBlock(fd, nextBlock, next));
+      void* nextData = BF_Block_GetData(next);
+      SHT_block_info* nextmetadata = malloc(sizeof(SHT_block_info));
+      memcpy(nextmetadata, nextData + BF_BLOCK_SIZE - sizeof(SHT_block_info), sizeof(SHT_block_info));
+      recordCount += nextmetadata->recordCount; // Προσθηκη των εγγραφων του μπλοκ υπερχειλισης στο αθροισμα.
+      nextBlock = nextmetadata->nextBlock;
+      CALL_OR_DIE(BF_UnpinBlock(next));
+      free(nextmetadata);
+      }
+    // Ενημερωσε τα στατιστικα για το συνολικο αριθμο εγγραφων, τον ελαχιστο και τον μεγιστο
+    sumRecords += recordCount;
+    if(recordCount < minRecords) minRecords = recordCount;
+    if(recordCount > maxRecords) maxRecords = recordCount;
+    CALL_OR_DIE(BF_UnpinBlock(block));
+  }
+  // Εκτυπωση των αποτελεσματων
+  printf("Number of blocks: %d\n", numBlocks);
+  printf("Minimum number of records per bucket: %d\n", minRecords);
+  printf("Maximum number of records per bucket: %d\n", maxRecords);
+  printf("Average number of records per bucket: %f\n", (float)sumRecords/numBuckets);
+  printf("Average number of blocks per bucket: %f\n", (float)numBlocks/numBuckets);
+  printf("Number of blocks for each bucket:\n");
+  int chainCount = 0;
+  for(int i = 0; i < numBuckets; i++){
+    printf("Bucket %d has %d blocks\n", i, chainLengths[i]);
+    if (chainLengths[i] > 1) {chainCount++;}
+  }
+  printf("Number of buckets with overflow chains: %d\n", chainCount);
+  free(chainLengths);
+  return 0;
 }

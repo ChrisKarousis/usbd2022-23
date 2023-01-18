@@ -38,6 +38,7 @@ int HT_CreateFile(char *fileName,  int buckets){
   data = BF_Block_GetData(infoBlock);
   // Δημιουργία και αποθήκευση δομής HT info
   HT_info hashInfo;
+  strcpy(hashInfo.file_type, "HT");
   hashInfo.fileDesc = fd;
   hashInfo.numBuckets = buckets;
   hashInfo.hashTable = malloc(buckets*sizeof(int));
@@ -67,8 +68,13 @@ HT_info* HT_OpenFile(char *fileName){
   CALL_OR_DIE(BF_GetBlock(fd, 0, block));
   
   data = BF_Block_GetData(block);
-  
   hashInfo = data;
+  // Ελεγχος οτι το αρχειο ειναι hash file
+  if (strcmp(hashInfo->file_type, "HT")!=0){
+    perror("Error opening: File is not a Hash File");
+    return NULL;
+  }
+  hashInfo->fileDesc = fd;
   return hashInfo;
 }
 
@@ -148,8 +154,9 @@ int HT_InsertEntry(HT_info* ht_info, Record record){
       BF_Block_SetDirty(block);
       CALL_OR_DIE(BF_UnpinBlock(block));
       }
-      }
-      return blockId;
+    free(metadata);
+    }
+    return blockId;
   }
 
 int HT_GetAllEntries(HT_info* ht_info, void *value ){
@@ -178,13 +185,14 @@ int HT_GetAllEntries(HT_info* ht_info, void *value ){
         return blockCount;
       }
     }
-    blockNumber = metadata->nextBlock; 
+    blockNumber = metadata->nextBlock;
+    free(metadata);
   }
   return -1;
 }
 
 
-int HashStatistics(char* fileName){
+int HT_HashStatistics(char* fileName){
   HT_info* ht_info =  HT_OpenFile(fileName);
   int fd = ht_info->fileDesc;
   int numBlocks;
@@ -197,7 +205,13 @@ int HashStatistics(char* fileName){
   int* chainLengths = malloc(numBuckets*sizeof(int)); // Ο αριθμος των blocks για καθε bucket (αλυσιδες υπερχειλισης)
 
   for(int i = 0; i < numBuckets; i++){ // Για καθε bucket
-    chainLengths[i] = 1; // Αρχικοποιηση σε 1 επειδη καθε bucket εχει τουλαχιστον 1 μπλοκ
+    // Αν ειναι αδειος, προχωρα στον επομενο καδο
+    if (hashTable[i] == -1){
+      minRecords = 0;
+      chainLengths[i] = 0;
+      continue;
+    }
+    chainLengths[i] = 1; // Αρχικοποιηση σε 1 αν ο καδος εχει τουλαχιστον 1 μπλοκ
     BF_Block* block;
     BF_Block_Init(&block);
     CALL_OR_DIE(BF_GetBlock(fd, hashTable[i], block));
@@ -226,7 +240,7 @@ int HashStatistics(char* fileName){
     if(recordCount > maxRecords) maxRecords = recordCount;
     CALL_OR_DIE(BF_UnpinBlock(block));
   }
-
+  // Εκτυπωση των αποτελεσματων
   printf("Number of blocks: %d\n", numBlocks);
   printf("Minimum number of records per bucket: %d\n", minRecords);
   printf("Maximum number of records per bucket: %d\n", maxRecords);
@@ -239,6 +253,8 @@ int HashStatistics(char* fileName){
     if (chainLengths[i] > 1) {chainCount++;}
   }
   printf("Number of buckets with overflow chains: %d\n", chainCount);
+
+  HT_CloseFile(ht_info);
   free(chainLengths);
   return 0;
 }

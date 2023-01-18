@@ -8,6 +8,7 @@ typedef struct {
 } HT_block_info;
 
 typedef struct {
+    char file_type[4];
     int fileDesc;
     long int numBuckets;
     int* hashTable; // we store the number of the block and then get the block with BF_GetBlock
@@ -58,6 +59,6 @@ int HT_InsertEntry(HT_info* header_info, /*επικεφαλίδα του αρχ�
 int HT_GetAllEntries(HT_info* header_info, /*επικεφαλίδα του αρχείου*/
 	void *value /*τιμή του πεδίου-κλειδιού προς αναζήτηση*/);
 
-int HashStatistics(char* filename /* όνομα του αρχείου που ενδιαφέρει */ );
+int HT_HashStatistics(char* filename /* όνομα του αρχείου που ενδιαφέρει */ );
 
 #endif // HT_FILE_H

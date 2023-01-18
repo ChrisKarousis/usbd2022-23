@@ -4,13 +4,13 @@
 #include <ht_table.h>
 
 typedef struct {
-    char record[15];
     char name[15];
     int blockId;
 } SHT_record;
 
 
 typedef struct {
+    char file_type[4];
     int fileDesc; /* αναγνωριστικός αριθμός ανοίγματος αρχείου από το επίπεδο block */
     int numBuckets; /* το πλήθος των “κάδων” του αρχείου κατακερματισμού */
     int* shashTable;
@@ -76,6 +76,6 @@ int SHT_SecondaryGetAllEntries(
 
 SHT_record setValues(char* name, int block_id);
 
-int HashStatistics(char* filename /* όνομα του αρχείου που ενδιαφέρει */ );
+int SHT_HashStatistics(char* filename /* όνομα του αρχείου που ενδιαφέρει */ );
 
 #endif // SHT_FILE_H

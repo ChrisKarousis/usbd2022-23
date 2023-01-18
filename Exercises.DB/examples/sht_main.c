@@ -6,7 +6,7 @@
 #include "ht_table.h"
 #include "sht_table.h"
 
-#define RECORDS_NUM 100 // you can change it if you want
+#define RECORDS_NUM 1000 // you can change it if you want
 #define FILE_NAME "SHT_data.db"
 #define INDEX_NAME "index.db"
 
@@ -32,8 +32,6 @@ int main() {
     // Θα ψάξουμε στην συνέχεια το όνομα searchName
     Record record=randomRecord();
     char searchName[15] = "Giorgos";
-    //char searchName[15];
-    //strcpy(searchName, record.name);
 
     // Κάνουμε εισαγωγή τυχαίων εγγραφών τόσο στο αρχείο κατακερματισμού τις οποίες προσθέτουμε και στο δευτερεύον ευρετήριο
     printf("Insert Entries\n");
@@ -51,6 +49,7 @@ int main() {
     // Κλείνουμε το αρχείο κατακερματισμού και το δευτερεύον ευρετήριο
     SHT_CloseSecondaryIndex(index_info);
     HT_CloseFile(info);
-    //
+    printf("RUN SHT Hash Statistics\n");
+    SHT_HashStatistics(INDEX_NAME);
     BF_Close();
 }

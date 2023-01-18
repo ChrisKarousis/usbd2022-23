@@ -38,7 +38,7 @@ int HP_CreateFile(char *fileName){
   BF_Block_SetDirty(block);
   CALL_BF(BF_UnpinBlock(block));
   CALL_BF(BF_CloseFile(fd));
-  printf("\nNew file created! File descriptor is: %d\n", fd);
+  printf("\nNew file created!\n");
 
   return 0;
 }
@@ -56,7 +56,18 @@ HP_info* HP_OpenFile(char *fileName){
   char* buffer = BF_Block_GetData(block);
   HP_info* info = malloc(sizeof(HP_info));
   memcpy(info, buffer, sizeof(info));
+  // Ελεγχος οτι το αρχειο ειναι αρχειο σωρου
+  if (strcmp(info->file_type, "HP")!=0){
+    perror("Error opening: File is not a Heap File");
+    free (info);
+    return NULL;
+  }
+  // Ενημερωση του file descriptor
+  info-> fd = fd;
+  memcpy(buffer, info, sizeof(info));
+  BF_Block_SetDirty(block);
 
+  printf("File opened!\n");
   return info;
 }
 
@@ -71,6 +82,7 @@ int HP_CloseFile( HP_info* hp_info ){
   CALL_BF(BF_CloseFile(fd));
   free(hp_info);
 
+  printf("File closed!\n");
   return 0;
 }
 
@@ -137,7 +149,7 @@ int HP_InsertEntry(HP_info* hp_info, Record record){
     CALL_BF(BF_UnpinBlock(block));
   }
 
-  return 0;
+  return hp_info->last_block;
 }
 
 int HP_GetAllEntries(HP_info* hp_info, int value){

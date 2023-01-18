@@ -97,6 +97,7 @@ int SHT_SecondaryInsertEntry(SHT_info* sht_info, Record record, int block_id){
   void* data;
   int blockNum;
   SHT_record shtRecord;
+  memcpy(shtRecord.record, "SHT_record", strlen("SHT_record")+1);
   memcpy(shtRecord.name, record.name, strlen(record.name) + 1);
   shtRecord.blockId = block_id;
   int h = shtHashFunction(record.name, sht_info->numBuckets);
